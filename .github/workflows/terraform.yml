@@ -13,10 +13,10 @@ on:
       - terraform/**
 
 env: 
-# credentials for AWS CLI and Terraform AWS Provider
+  # credentials for AWS CLI and Terraform AWS Provider
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-# s3 bucket for the terraform remote state
+  # s3 bucket for the terraform remote state
   BUCKET_TF_STATE: ${{ secrets.BUCKET_TF_STATE }}
   AWS_REGION: us-east-1
   EKS_CLUSTER: vprofile-eks
@@ -77,8 +77,10 @@ jobs:
         if: steps.apply.outcome == 'success'
         run: aws eks update-kubeconfig --name $EKS_CLUSTER --region $AWS_REGION
 
+      - name: "Verify cluster connectivity"
+        if: steps.apply.outcome == 'success' && steps.getconfig.outcome == 'success'
+        run: kubectl get nodes
+
       - name: "Install Ingress controller"
         if: steps.apply.outcome == 'success' && steps.getconfig.outcome == 'success'
-        run: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/aws/deploy.yaml
-
-      
+        run: kubectl apply --validate=false -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.1/deploy/static/provider/aws/deploy.yaml
